@@ -1,0 +1,17 @@
+{
+  "name": "uscis-appointment-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mohan Krishna Balli",
+  "license": "ISC",
+  "dependencies": {
+    "node-cron": "^2.0.3",
+    "nodemailer": "^6.4.17",
+    "nodemailer-smtp-transport": "^2.7.4",
+    "twilio": "^3.55.0"
+  }
+}
