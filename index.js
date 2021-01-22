@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const https = require('https');
+const logger = require('./logger').logger;
 const nodemailer = require('nodemailer');
 const smtpTransport = require('nodemailer-smtp-transport');
 const twilio = require('twilio');
@@ -16,7 +17,7 @@ const toEmail = process.env.TO_EMAIL_ID
 const uscisLink = "https://my.uscis.gov/appointmentscheduler-appointment/ca/en/office-search"
 
 function job() {
-    console.log(`USCIS Tracker: ${new Date().toLocaleString()} New job`)
+    logger.info(`Running New job`)
     const options = {
         hostname: 'my.uscis.gov',
         port: 443,
@@ -28,24 +29,26 @@ function job() {
         res.setEncoding('utf8');
 
         res.on('data', data => {
-            console.log(`USCIS Tracker: ${new Date().toLocaleString()} Response received`)
+            logger.info(`Response received`)
             const cincyInfo = (JSON.parse(data)).filter(info => info.description === 'USCIS CINCINNATI')[0]
 
             if (cincyInfo.timeSlots && cincyInfo.timeSlots.length !== 0) {
-                console.log(`USCIS Tracker: ${new Date().toLocaleString()} Time slots are ${cincyInfo.timeSlots}`)
+                logger.info(`Time slots are ${cincyInfo.timeSlots}`)
+
                 // Send mobile message
+                const client = new twilio(accountSid, authToken);
 
-                // const client = new twilio(accountSid, authToken);
-
-                // client.messages.create({
-                //     body: `Seems USCIS appointments are open, visit ${uscisLink} for more info.`,
-                //     to: toMobileNumber,
-                //     from: fromMobileNumber
-                // }).then((message) => console.log(message.status));
-
+                client.messages.create({
+                    body: `Seems USCIS appointments are open, visit ${uscisLink} for more info.`,
+                    to: toMobileNumber,
+                    from: fromMobileNumber
+                })
+                .then((message) => logger.info(`Message is ${message.status}`))
+                .catch((error) => {
+                    logger.error(`Error occured when sending sms ${error}`)
+                })
 
                 // Send email
-
                 const smtpConfig = {
                     service: 'gmail',
                     auth: {
@@ -64,19 +67,17 @@ function job() {
 
                 transporter.sendMail(mailOptions, function (error, info) {
                     if (error) {
-                        console.error(`USCIS Tracker: ${new Date().toLocaleString()} Error Occured: ${Error}`)
+                        logger.error(`Error Occured when sending email: ${Error}`)
                     } else {
-                        console.log(`USCIS Tracker: ${new Date().toLocaleString()} Email Sent`)
+                        logger.info(`Email Sent`)
                     }
                 })
             }
-
-            console.log('\n')
         })
     })
 
     req.on('error', error => {
-        console.error(error)
+        logger.error(error)
     })
 
     req.end()
